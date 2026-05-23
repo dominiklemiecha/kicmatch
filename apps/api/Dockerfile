@@ -31,8 +31,11 @@ COPY --from=build /app/packages/shared/package.json ./packages/shared/package.js
 COPY --from=build /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
+COPY --from=build /app/apps/api/prisma.config.ts ./apps/api/prisma.config.ts
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+COPY --from=build /app/apps/api/tsconfig.json ./apps/api/tsconfig.json
 COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=build /app/tsconfig.base.json ./tsconfig.base.json
 WORKDIR /app/apps/api
 EXPOSE 3000
 # Apply pending Prisma migrations on container start, then boot Nest
