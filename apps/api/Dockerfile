@@ -24,7 +24,7 @@ FROM base AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 # Copy full workspace (pnpm's .pnpm/ store + symlinks need to be intact for Prisma Client + CLI to resolve)
-COPY --from=build /app/pnpm-workspace.yaml /app/package.json ./
+COPY --from=deps /app/pnpm-workspace.yaml /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/packages/shared/dist ./packages/shared/dist
 COPY --from=build /app/packages/shared/package.json ./packages/shared/package.json
