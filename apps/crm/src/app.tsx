@@ -1,0 +1,17 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from "@tanstack/react-router";
+import { Toaster } from "sonner";
+import { router } from "./router";
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: false } },
+});
+
+export function App(): JSX.Element {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+      <Toaster richColors position="top-right" />
+    </QueryClientProvider>
+  );
+}

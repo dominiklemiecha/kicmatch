@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  passwordHash      String
+  firstName         String
+  lastName          String
+  profileType       ProfileType  @default(PRIVATE)
+  profileName       String?
+  country           String       @default("IT")
+  avatarUrl         String?
+  bio               String?
+  website           String?
+  plan              Plan         @default(FREE)
+  stripeAccountId   String?
+  stripeOnboarded   Boolean      @default(false)
+  emailVerified     Boolean      @default(false)
+  role              UserRole     @default(ORGANIZER)
+  ibanDefault       String?
+  ibanHolderDefault String?
+  subscriptionStartAt DateTime?
+  subscriptionEndAt   DateTime?
+  isBlocked         Boolean      @default(false)
+  blockedAt         DateTime?
+  blockedReason     String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  refreshTokens     RefreshToken[]
+  events            Event[]
+  payoutRequests    PayoutRequest[]
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Event {
+  id              String       @id @default(cuid())
+  userId          String
+  slug            String       @unique
+  name            String
+  description     String?
+  coverImageUrl   String?
+  startAt         DateTime
+  endAt           DateTime?
+  timezone        String       @default("Europe/Rome")
+  locationType    LocationType @default(PHYSICAL)
+  locationName    String?
+  locationAddress String?
+  onlineUrl       String?
+  capacity        Int?
+  rsvpDeadline    DateTime?
+  isPaid          Boolean      @default(false)
+  priceCents      Int?
+  currency        String       @default("EUR")
+  paymentMethods  Json         @default("{}")
+  status          EventStatus  @default(DRAFT)
+  publishedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  invitations     Invitation[]
+  form            EventForm?
+  participants    Participant[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model EventForm {
+  id              String   @id @default(cuid())
+  eventId         String   @unique
+  fields          Json     @default("[]")
+  privacyRequired Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+}
+
+model Invitation {
+  id            String           @id @default(cuid())
+  eventId       String
+  email         String?
+  token         String           @unique
+  source        InvitationSource
+  sentAt        DateTime?
+  openedAt      DateTime?
+  createdAt     DateTime         @default(now())
+  event         Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  participant   Participant?
+
+  @@index([eventId])
+  @@index([token])
+}
+
+model Participant {
+  id               String            @id @default(cuid())
+  eventId          String
+  invitationId     String?           @unique
+  email            String
+  firstName        String
+  lastName         String
+  phone            String?
+  formData         Json              @default("{}")
+  status           ParticipantStatus @default(CONFIRMED)
+  rejectedReason   String?
+  privacyAcceptedAt DateTime?
+  ticketCode       String?           @unique
+  qrCheckedInAt    DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  event            Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invitation       Invitation?       @relation(fields: [invitationId], references: [id])
+  payment          Payment?
+
+  @@index([eventId, status])
+  @@index([email])
+}
+
+model Payment {
+  id                  String        @id @default(cuid())
+  participantId       String        @unique
+  stripeCheckoutId    String?       @unique
+  stripePaymentIntent String?       @unique
+  amountCents         Int
+  feeCents            Int
+  currency            String        @default("EUR")
+  status              PaymentStatus @default(PENDING)
+  paidAt              DateTime?
+  refundedAt          DateTime?
+  failureReason       String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  participant         Participant   @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+}
+
+model ProcessedWebhook {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  processedAt   DateTime @default(now())
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum InvitationSource {
+  MANUAL
+  CSV
+  LINK
+}
+
+enum ProfileType {
+  PRIVATE
+  BUSINESS
+}
+
+enum Plan {
+  FREE
+  PRO
+  BUSINESS
+  ENTERPRISE
+}
+
+enum LocationType {
+  PHYSICAL
+  ONLINE
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  CANCELLED
+}
+
+enum ParticipantStatus {
+  INVITED
+  OPENED
+  STARTED
+  CONFIRMED
+  PENDING_PAYMENT
+  PAID
+  CANCELLED
+  REJECTED
+}
+
+model PayoutRequest {
+  id              String       @id @default(cuid())
+  userId          String
+  amountCents     Int
+  currency        String       @default("EUR")
+  iban            String
+  ibanHolder      String
+  status          PayoutStatus @default(PENDING)
+  notes           String?
+  adminNotes      String?
+  requestedAt     DateTime     @default(now())
+  processedAt     DateTime?
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+}
+
+enum UserRole {
+  ORGANIZER
+  SUPERADMIN
+}
+
+enum PayoutStatus {
+  PENDING
+  APPROVED
+  PAID
+  REJECTED
+}

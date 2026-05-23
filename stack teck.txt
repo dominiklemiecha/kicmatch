@@ -1,0 +1,9 @@
+Docker
+Dokploy
+postresql
+Next
+Nest
+React/Vite
+No logo react
+
+Dividi front da back nel conteiner

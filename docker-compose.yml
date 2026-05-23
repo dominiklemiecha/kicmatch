@@ -1,0 +1,172 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kicmatch-postgres
+    environment:
+      POSTGRES_USER: kicmatch
+      POSTGRES_PASSWORD: kicmatch
+      POSTGRES_DB: kicmatch
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kicmatch"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: kicmatch-redis
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: kicmatch-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: kicmatch
+      MINIO_ROOT_PASSWORD: kicmatch-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  # ---- DEV: hot reload con bind mount (default, parte con `docker compose up`) ----
+
+  api:
+    image: node:20-alpine
+    container_name: kicmatch-api
+    working_dir: /app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DATABASE_URL: postgresql://kicmatch:kicmatch@postgres:5432/kicmatch
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost:5173
+      NPM_CONFIG_STRICT_SSL: "false"
+      JWT_ACCESS_SECRET: dev_access_secret_change_in_production_min_32_chars
+      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production_min_32_chars
+      COOKIE_DOMAIN: localhost
+      COOKIE_SECURE: "false"
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_PLACEHOLDER_REPLACE_ME}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_PLACEHOLDER_REPLACE_ME}
+      APP_PUBLIC_URL: http://localhost:5173
+      EMAIL_HOST: ${EMAIL_HOST:-}
+      EMAIL_PORT: ${EMAIL_PORT:-587}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      EMAIL_SECURE: ${EMAIL_SECURE:-false}
+      EMAIL_FROM: ${EMAIL_FROM:-Kicmatch <noreply@kicmatch.local>}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://localhost:9000
+      MINIO_ACCESS_KEY: kicmatch
+      MINIO_SECRET_KEY: kicmatch-secret
+      MINIO_BUCKET: kicmatch
+    ports:
+      - "3010:3000"
+    volumes:
+      - .:/app
+      - api_root_node_modules:/app/node_modules
+      - api_app_node_modules:/app/apps/api/node_modules
+      - api_shared_node_modules:/app/packages/shared/node_modules
+      - api_crm_node_modules:/app/apps/crm/node_modules
+    command: >
+      sh -c "
+        corepack enable &&
+        corepack prepare pnpm@9.12.0 --activate &&
+        pnpm install --config.strict-ssl=false &&
+        pnpm --filter @kicmatch/shared build &&
+        pnpm --filter @kicmatch/api exec prisma generate &&
+        pnpm --filter @kicmatch/api exec prisma migrate deploy &&
+        pnpm --filter @kicmatch/api dev
+      "
+
+  crm:
+    image: node:20-alpine
+    container_name: kicmatch-crm
+    working_dir: /app
+    depends_on:
+      - api
+    environment:
+      VITE_API_URL: http://localhost:3010/api/v1
+      NPM_CONFIG_STRICT_SSL: "false"
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - crm_root_node_modules:/app/node_modules
+      - crm_app_node_modules:/app/apps/crm/node_modules
+      - crm_shared_node_modules:/app/packages/shared/node_modules
+      - crm_api_node_modules:/app/apps/api/node_modules
+    command: >
+      sh -c "
+        corepack enable &&
+        corepack prepare pnpm@9.12.0 --activate &&
+        pnpm install --config.strict-ssl=false &&
+        pnpm --filter @kicmatch/shared build &&
+        pnpm --filter @kicmatch/crm dev --host 0.0.0.0
+      "
+
+  # ---- PROD: immagini multi-stage (solo con `docker compose --profile prod up`) ----
+
+  api-prod:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: kicmatch-api-prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://kicmatch:kicmatch@postgres:5432/kicmatch
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost:8080
+    ports:
+      - "3002:3000"
+    profiles: ["prod"]
+
+  crm-prod:
+    build:
+      context: .
+      dockerfile: apps/crm/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:3002/api/v1
+    container_name: kicmatch-crm-prod
+    depends_on:
+      - api-prod
+    ports:
+      - "8080:80"
+    profiles: ["prod"]
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  api_root_node_modules:
+  api_app_node_modules:
+  api_shared_node_modules:
+  api_crm_node_modules:
+  crm_root_node_modules:
+  crm_app_node_modules:
+  crm_shared_node_modules:
+  crm_api_node_modules:

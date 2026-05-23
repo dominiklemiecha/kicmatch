@@ -1,0 +1,29 @@
+node_modules/
+dist/
+build/
+.next/
+.turbo/
+coverage/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+/data/
+/.tools/
+/.pnpm-store/
+
+# Local tooling/config
+/.claude/
+CLAUDE.md
+
+# Reference mockups (local only)
+/1.jpeg
+/2.jpeg
+/3.jpeg
+/4.jpeg
+/5.jpeg

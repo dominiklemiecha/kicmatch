@@ -1,0 +1,97 @@
+Flusso principale
+1. Creazione evento — Organizzatore
+L’utente crea un evento inserendo:
+
+Nome evento
+Data, ora, luogo o link online
+Descrizione
+Numero massimo partecipanti
+Prezzo partecipazione, se previsto
+Scadenza conferma
+Campi del modulo partecipante
+Logo/immagine evento
+Metodo di pagamento
+Output: pagina evento + link invito.
+
+2. Invio inviti
+L’organizzatore può:
+
+Inserire email manualmente
+Caricare lista CSV/Excel
+Generare link condivisibile
+Inviare invito automatico via email/WhatsApp
+Ogni invitato riceve un link personale o generale.
+
+3. Pagina invito — Partecipante
+Il partecipante vede:
+
+Dettagli evento
+Prezzo, se presente
+Stato posti disponibili
+Pulsante “Partecipa”
+4. Modulo partecipazione
+Il partecipante compila:
+
+Nome e cognome
+Email
+Telefono
+Eventuali preferenze
+Campi personalizzati
+Accettazione privacy/termini
+Poi sceglie:
+
+Confermo partecipazione
+Non posso partecipare
+In forse, se vuoi prevederlo
+5. Pagamento
+Se l’evento è a pagamento:
+
+Il partecipante conferma i dati
+Viene mandato al checkout
+Paga con carta, Apple Pay, Google Pay, PayPal o bonifico
+Riceve conferma via email
+L’organizzatore vede pagamento completato
+Consiglio: usare Stripe come primo sistema.
+
+6. Conferma finale
+Dopo il pagamento o la conferma:
+
+Email di conferma al partecipante
+QR code o biglietto digitale
+Possibilità di aggiungere evento al calendario
+Dashboard aggiornata per l’organizzatore
+Dashboard organizzatore
+Deve mostrare:
+
+Numero invitati
+Confermati
+Non partecipano
+Pagati
+In attesa pagamento
+Lista partecipanti
+Export Excel/CSV
+Invio reminder
+Check-in con QR code
+Stati partecipante
+Ogni partecipante può avere uno stato:
+
+
+
+Stato
+Significato
+Invitato
+Ha ricevuto invito
+Aperto
+Ha aperto il link
+Modulo iniziato
+Ha iniziato compilazione
+Confermato
+Ha confermato
+In attesa pagamento
+Deve pagare
+Pagato
+Pagamento completato
+Annullato
+Ha cancellato
+Rifiutato
+Non partecipa

@@ -1,0 +1,130 @@
+# Production compose for Dokploy.
+# Uses Traefik labels on the `dokploy-network` external network for routing/TLS.
+# All secrets/config are injected by Dokploy via the project's environment variables.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - internal
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    networks:
+      - internal
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: ${APP_PUBLIC_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      COOKIE_SECURE: "true"
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      EMAIL_SECURE: ${EMAIL_SECURE}
+      EMAIL_FROM: ${EMAIL_FROM}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      MINIO_BUCKET: ${MINIO_BUCKET}
+    networks:
+      - internal
+
+  crm:
+    build:
+      context: .
+      dockerfile: apps/crm/Dockerfile
+      args:
+        VITE_API_URL: /api/v1
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - internal
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # HTTPS router for both www and apex
+      - traefik.http.routers.kicmatch.rule=Host(`www.kicmatch.com`) || Host(`kicmatch.com`)
+      - traefik.http.routers.kicmatch.entrypoints=websecure
+      - traefik.http.routers.kicmatch.tls=true
+      - traefik.http.routers.kicmatch.tls.certresolver=letsencrypt
+      - traefik.http.services.kicmatch.loadbalancer.server.port=80
+      # HTTP -> HTTPS redirect
+      - traefik.http.routers.kicmatch-http.rule=Host(`www.kicmatch.com`) || Host(`kicmatch.com`)
+      - traefik.http.routers.kicmatch-http.entrypoints=web
+      - traefik.http.routers.kicmatch-http.middlewares=kicmatch-redirect
+      - traefik.http.middlewares.kicmatch-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.kicmatch-redirect.redirectscheme.permanent=true
+      # Redirect apex -> www on HTTPS
+      - traefik.http.routers.kicmatch-apex.rule=Host(`kicmatch.com`)
+      - traefik.http.routers.kicmatch-apex.entrypoints=websecure
+      - traefik.http.routers.kicmatch-apex.tls=true
+      - traefik.http.routers.kicmatch-apex.tls.certresolver=letsencrypt
+      - traefik.http.routers.kicmatch-apex.middlewares=kicmatch-www-redirect
+      - traefik.http.middlewares.kicmatch-www-redirect.redirectregex.regex=^https?://kicmatch\.com/(.*)$$
+      - traefik.http.middlewares.kicmatch-www-redirect.redirectregex.replacement=https://www.kicmatch.com/$$1
+      - traefik.http.middlewares.kicmatch-www-redirect.redirectregex.permanent=true
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+
+networks:
+  internal:
+  dokploy-network:
+    external: true
