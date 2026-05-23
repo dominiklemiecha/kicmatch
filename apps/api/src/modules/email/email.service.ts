@@ -35,17 +35,32 @@ function htmlToText(html: string): string {
     .trim();
 }
 
+function parseFrom(from: string): { name?: string; email: string } {
+  const match = /^(.*?)\s*<(.+?)>\s*$/.exec(from);
+  if (match) return { name: match[1].trim() || undefined, email: match[2].trim() };
+  return { email: from };
+}
+
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly transporter: Transporter | null;
   private readonly from: string;
+  private readonly brevoApiKey: string | undefined;
 
   constructor(private readonly config: ConfigService<Env, true>) {
-    const host = this.config.get("EMAIL_HOST", { infer: true });
     this.from = this.config.get("EMAIL_FROM", { infer: true });
+    this.brevoApiKey = this.config.get("BREVO_API_KEY", { infer: true });
+
+    if (this.brevoApiKey) {
+      this.logger.log("Email transport: Brevo HTTP API");
+      this.transporter = null;
+      return;
+    }
+
+    const host = this.config.get("EMAIL_HOST", { infer: true });
     if (!host) {
-      this.logger.warn("EMAIL_HOST non configurato: email solo in console log");
+      this.logger.warn("Nessun transport email configurato: email solo in console log");
       this.transporter = null;
       return;
     }
@@ -57,11 +72,18 @@ export class EmailService {
       secure: this.config.get("EMAIL_SECURE", { infer: true }),
       auth: user && pass ? { user, pass } : undefined,
       tls: { rejectUnauthorized: false },
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
     });
-    this.logger.log(`Email SMTP configurato (host=${host})`);
+    this.logger.log(`Email transport: SMTP (host=${host})`);
   }
 
   async send(args: SendArgs): Promise<void> {
+    if (this.brevoApiKey) {
+      await this.sendViaBrevo(args, this.brevoApiKey);
+      return;
+    }
     if (!this.transporter) {
       this.logger.log(`[DEV EMAIL] To: ${args.to} | Subject: ${args.subject}`);
       return;
@@ -78,6 +100,51 @@ export class EmailService {
       this.logger.log(`Email inviata a ${args.to} (id=${info.messageId}): ${args.subject}`);
     } catch (err) {
       this.logger.error(`Errore invio email a ${args.to}`, err as Error);
+    }
+  }
+
+  private async sendViaBrevo(args: SendArgs, apiKey: string): Promise<void> {
+    // Brevo HTTP API does not support cid: inline images — inline as data URIs
+    let html = args.html;
+    for (const att of args.attachments ?? []) {
+      const base64 = att.content instanceof Buffer ? att.content.toString("base64") : att.content;
+      const mime = att.contentType ?? "image/png";
+      html = html.replaceAll(`cid:${att.cid}`, `data:${mime};base64,${base64}`);
+    }
+
+    const sender = parseFrom(this.from);
+    const body = {
+      sender,
+      to: [{ email: args.to }],
+      subject: args.subject,
+      htmlContent: html,
+      textContent: args.text ?? htmlToText(html),
+    };
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+    try {
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": apiKey,
+          "content-type": "application/json",
+          accept: "application/json",
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        this.logger.error(`Brevo API HTTP ${res.status} a ${args.to}: ${text}`);
+        return;
+      }
+      const data = (await res.json()) as { messageId?: string };
+      this.logger.log(`Email inviata via Brevo a ${args.to} (id=${data.messageId}): ${args.subject}`);
+    } catch (err) {
+      this.logger.error(`Errore Brevo API a ${args.to}`, err as Error);
+    } finally {
+      clearTimeout(timer);
     }
   }
 }

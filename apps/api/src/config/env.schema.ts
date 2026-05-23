@@ -25,6 +25,7 @@ export const envSchema = z.object({
   MINIO_SECRET_KEY: z.string().default("kicmatch-secret"),
   MINIO_BUCKET: z.string().default("kicmatch"),
   ADMIN_BOOTSTRAP_TOKEN: z.string().optional(),
+  BREVO_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
