@@ -6,11 +6,13 @@ import { rsvpInputSchema } from "@kicmatch/shared";
 import { AxiosError } from "axios";
 import {
   Calendar,
+  CalendarPlus,
   CheckCircle2,
   ChevronLeft,
   Globe,
   Lock,
   MapPin,
+  Ticket,
   Users,
 } from "lucide-react";
 import { useState } from "react";
@@ -671,49 +673,152 @@ function PublicEventPage(): JSX.Element {
 
   // Step 6: Done / Confirmed
   return (
-    <PageShell>
-      <Card className="p-8 text-center space-y-5">
-        <div className="mx-auto h-20 w-20 rounded-full bg-green-100 flex items-center justify-center">
-          <CheckCircle2 className="h-12 w-12 text-green-600" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {e.isPaid ? "Iscrizione registrata" : "Iscrizione confermata!"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-2">
-            {e.isPaid
-              ? "La tua iscrizione è in attesa di pagamento. Riceverai un'email con i prossimi passi."
-              : `Sei iscritto a ${e.name}.`}
-          </p>
-        </div>
-        {resultCode && (
-          <div className="rounded-lg border bg-muted/30 p-4">
-            <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1">
-              Codice partecipante
+    <PublicShell containerClassName="flex-1 flex items-center justify-center px-4 py-8">
+      <div className="w-full max-w-sm">
+        <div className="rounded-2xl bg-card overflow-hidden shadow-2xl">
+          {/* Dark header with confetti + check (same layout as paid success page) */}
+          <div className="relative px-6 pt-7 pb-8 text-center text-white bg-gradient-to-b from-[#1a0f3a] to-[#0b0518] overflow-hidden">
+            <DoneConfetti />
+            <div className="relative">
+              <img src="/logo_white.png" alt="Kicmatch" className="h-6 w-auto mx-auto opacity-90" />
+              <div className="mt-6 mx-auto h-16 w-16 rounded-full bg-emerald-500 flex items-center justify-center ring-4 ring-emerald-500/25 shadow-lg shadow-emerald-500/30">
+                <CheckCircle2 className="h-9 w-9 text-white" />
+              </div>
+              <h1 className="mt-4 text-2xl font-bold tracking-tight">
+                {e.isPaid ? "Iscrizione registrata" : "Iscrizione confermata!"}
+              </h1>
+              <p className="mt-2 text-sm text-white/70">Sei iscritto a</p>
+              <p className="text-base font-semibold">{e.name}</p>
             </div>
-            <div className="font-mono text-sm font-semibold">{resultCode}</div>
           </div>
-        )}
-        <div className="rounded-lg border bg-card p-4 text-sm space-y-1.5">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-3.5 w-3.5" />
-            {formatDate(e.startAt)}
-          </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            {e.locationType === "ONLINE" ? (
-              <Globe className="h-3.5 w-3.5" />
-            ) : (
-              <MapPin className="h-3.5 w-3.5" />
+
+          {/* Body */}
+          <div className="px-6 py-5 space-y-4">
+            <div className="flex items-start gap-3 text-sm">
+              <Calendar className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              <div className="flex-1 flex items-baseline justify-between gap-3">
+                <span className="text-muted-foreground">Data</span>
+                <span className="text-foreground text-right">{formatDate(e.startAt)}</span>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 text-sm">
+              {e.locationType === "ONLINE" ? (
+                <Globe className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              ) : (
+                <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+              )}
+              <div className="flex-1 flex items-baseline justify-between gap-3">
+                <span className="text-muted-foreground">Luogo</span>
+                <span className="text-foreground text-right">
+                  {e.locationType === "ONLINE" ? "Evento online" : e.locationName ?? "—"}
+                </span>
+              </div>
+            </div>
+            {resultCode && (
+              <div className="flex items-start gap-3 text-sm">
+                <Ticket className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="flex-1 flex items-baseline justify-between gap-3">
+                  <span className="text-muted-foreground">Codice partecipante</span>
+                  <span className="text-foreground text-right font-mono text-xs">{resultCode}</span>
+                </div>
+              </div>
             )}
-            {e.locationType === "ONLINE" ? "Evento online" : e.locationName ?? "—"}
+            <div className="mt-3 rounded-lg bg-muted/40 px-4 py-3 text-center text-xs text-muted-foreground">
+              {e.isPaid
+                ? "Ti abbiamo inviato un'email con i prossimi passi."
+                : "Abbiamo inviato tutti i dettagli alla tua email."}
+            </div>
+            <Button variant="outline" className="w-full rounded-lg" onClick={() => downloadEventIcs(e)}>
+              <CalendarPlus className="h-4 w-4 mr-2" /> Aggiungi al calendario
+            </Button>
+          </div>
+
+          <div className="px-6 pb-6 pt-1">
+            <p className="text-center text-[11px] text-muted-foreground">
+              {e.isPaid
+                ? "Una volta confermato il pagamento, riceverai il QR code via email."
+                : "Il QR code per il check-in ti arriverà via email a breve."}
+            </p>
+            <div className="mt-4 flex items-center justify-center gap-1 text-[11px] text-muted-foreground">
+              <Lock className="h-3 w-3" /> I tuoi dati sono protetti
+            </div>
           </div>
         </div>
-        <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground border-t pt-4">
-          <Lock className="h-3 w-3" /> I tuoi dati sono protetti
-        </div>
-      </Card>
-    </PageShell>
+      </div>
+    </PublicShell>
   );
+}
+
+function DoneConfetti(): JSX.Element {
+  const dots = [
+    { x: "8%", y: "12%", c: "#fbbf24", s: 5 },
+    { x: "18%", y: "30%", c: "#f472b6", s: 3 },
+    { x: "12%", y: "55%", c: "#a78bfa", s: 4 },
+    { x: "22%", y: "78%", c: "#34d399", s: 3 },
+    { x: "32%", y: "8%", c: "#f87171", s: 4 },
+    { x: "42%", y: "22%", c: "#60a5fa", s: 3 },
+    { x: "55%", y: "8%", c: "#fbbf24", s: 4 },
+    { x: "68%", y: "20%", c: "#a78bfa", s: 5 },
+    { x: "82%", y: "10%", c: "#34d399", s: 3 },
+    { x: "92%", y: "32%", c: "#f472b6", s: 4 },
+    { x: "78%", y: "55%", c: "#fbbf24", s: 3 },
+    { x: "88%", y: "78%", c: "#60a5fa", s: 4 },
+    { x: "70%", y: "85%", c: "#f87171", s: 3 },
+    { x: "48%", y: "88%", c: "#a78bfa", s: 4 },
+    { x: "30%", y: "90%", c: "#34d399", s: 3 },
+  ];
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      {dots.map((d, i) => (
+        <span
+          key={i}
+          className="absolute rounded-full"
+          style={{ left: d.x, top: d.y, width: d.s, height: d.s, background: d.c, opacity: 0.9 }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function pad2(n: number): string {
+  return n.toString().padStart(2, "0");
+}
+
+function toIcsDate(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}T${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}00Z`;
+}
+
+function downloadEventIcs(e: PublicEvent): void {
+  const start = toIcsDate(e.startAt);
+  const end = e.endAt
+    ? toIcsDate(e.endAt)
+    : toIcsDate(new Date(new Date(e.startAt).getTime() + 2 * 60 * 60 * 1000).toISOString());
+  const location =
+    e.locationType === "ONLINE"
+      ? e.onlineUrl ?? "Online"
+      : [e.locationName, e.locationAddress].filter(Boolean).join(", ");
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Kicmatch//IT",
+    "BEGIN:VEVENT",
+    `UID:${e.slug}-${Date.now()}@kicmatch`,
+    `DTSTAMP:${toIcsDate(new Date().toISOString())}`,
+    `DTSTART:${start}`,
+    `DTEND:${end}`,
+    `SUMMARY:${e.name}`,
+    `LOCATION:${location}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${e.name.replace(/[^\w\s-]/g, "")}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export const Route = createRoute({
