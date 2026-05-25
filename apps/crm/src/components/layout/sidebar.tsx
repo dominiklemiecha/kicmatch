@@ -16,7 +16,7 @@ export const NAV_ITEMS = [
   { to: "/settings", label: "Impostazioni", icon: Settings },
 ] as const;
 
-const ADMIN_NAV = [
+export const ADMIN_NAV = [
   { to: "/admin", label: "Super Admin", icon: Shield },
   { to: "/admin/users", label: "Organizzatori", icon: Users },
   { to: "/admin/payouts", label: "Payout", icon: CreditCard },
