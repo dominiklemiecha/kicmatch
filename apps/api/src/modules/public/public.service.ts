@@ -3,18 +3,9 @@ import type { Event, Participant } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { EmailService } from "../email/email.service";
-import * as QRCode from "qrcode";
 import { paymentConfirmationEmail, rsvpConfirmationEmail, ticketEmail } from "../email/templates";
 
-async function ticketQrAttachment(ticketCode: string | null): Promise<{ filename: string; content: Buffer; cid: string; contentType: string }[]> {
-  if (!ticketCode) return [];
-  try {
-    const buffer = await QRCode.toBuffer(ticketCode, { width: 360, margin: 1, color: { dark: "#0f172a", light: "#ffffff" } });
-    return [{ filename: "qr.png", content: buffer, cid: "ticket-qr", contentType: "image/png" }];
-  } catch {
-    return [];
-  }
-}
+// (ticketQrAttachment removed — QR is now served via /api/v1/public/tickets/:code/qr.png)
 import type { RsvpInput } from "@kicmatch/shared";
 
 function generateTicketCode(): string {
@@ -119,14 +110,12 @@ export class PublicService {
         subject: `Iscrizione confermata - ${event.name}`,
         html: rsvpConfirmationEmail(event, { firstName: participant.firstName, ticketCode: participant.ticketCode }),
       });
-      // Email 2: biglietto con QR
+      // Email 2: biglietto con QR (immagine servita via /api/v1/public/tickets/:code/qr.png)
       if (participant.ticketCode) {
-        const attachments = await ticketQrAttachment(participant.ticketCode);
         await this.email.send({
           to: participant.email,
           subject: `Il tuo biglietto - ${event.name}`,
           html: ticketEmail(event, { firstName: participant.firstName, ticketCode: participant.ticketCode }),
-          attachments,
         });
       }
     }
@@ -177,14 +166,12 @@ export class PublicService {
         subject: `Pagamento ricevuto - ${refreshed.event.name}`,
         html: paymentConfirmationEmail(refreshed.event, { firstName: refreshed.firstName, ticketCode: refreshed.ticketCode }, payment.amountCents, payment.currency),
       });
-      // Email 2: biglietto con QR
+      // Email 2: biglietto con QR (immagine servita via /api/v1/public/tickets/:code/qr.png)
       if (refreshed.ticketCode) {
-        const attachments = await ticketQrAttachment(refreshed.ticketCode);
         await this.email.send({
           to: refreshed.email,
           subject: `Il tuo biglietto - ${refreshed.event.name}`,
           html: ticketEmail(refreshed.event, { firstName: refreshed.firstName, ticketCode: refreshed.ticketCode }),
-          attachments,
         });
       }
     }

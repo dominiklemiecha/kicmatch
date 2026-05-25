@@ -86,7 +86,7 @@ export function ticketCardWithQr(ticketCode: string): string {
       <div style="display:inline-block;margin-top:6px;padding:3px 10px;background:rgba(16,185,129,0.15);color:#34d399;border-radius:999px;font-size:11px;font-weight:600">✓ Biglietto valido</div>
       <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:18px auto 6px"><tr><td>
         <div style="background:#fff;padding:12px;border-radius:10px;display:inline-block">
-          <img src="cid:ticket-qr" alt="QR" width="180" height="180" style="display:block;width:180px;height:180px;border:0" />
+          <img src="${appUrl()}/api/v1/public/tickets/${encodeURIComponent(ticketCode)}/qr.png" alt="QR" width="180" height="180" style="display:block;width:180px;height:180px;border:0" />
         </div>
       </td></tr></table>
       <div style="font-size:12px;color:#cbd5e1;margin-top:10px">Scansiona il QR code per il check-in</div>

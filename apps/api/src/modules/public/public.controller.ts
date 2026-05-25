@@ -9,6 +9,7 @@ import {
   Param,
   Post,
   Req,
+  Res,
   ServiceUnavailableException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -26,7 +27,8 @@ import {
   type RsvpInput,
   type RsvpResult,
 } from "@kicmatch/shared";
-import type { Request } from "express";
+import type { Request, Response } from "express";
+import * as QRCode from "qrcode";
 import type { Stripe } from "stripe/cjs/stripe.core.js";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { ZodValidationPipe } from "../../common/pipes/zod-validation.pipe";
@@ -95,6 +97,22 @@ export class PublicController {
       },
       requiresPayment,
     });
+  }
+
+  @Get("public/tickets/:code/qr.png")
+  async ticketQr(@Param("code") code: string, @Res() res: Response): Promise<void> {
+    // Generate a PNG QR for the ticket code on the fly.
+    // The code itself is what gets encoded, so exposing this is no worse than
+    // letting someone with the code do a check-in.
+    if (!/^[A-Z0-9-]{6,64}$/i.test(code)) throw new BadRequestException("Codice non valido");
+    const buffer = await QRCode.toBuffer(code, {
+      width: 360,
+      margin: 1,
+      color: { dark: "#0f172a", light: "#ffffff" },
+    });
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.send(buffer);
   }
 
   @Get("public/checkout/:sessionId")
