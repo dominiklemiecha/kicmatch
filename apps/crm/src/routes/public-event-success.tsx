@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createRoute, useParams, useSearch } from "@tanstack/react-router";
 import { Calendar, CalendarPlus, CheckCircle2, MapPin, Ticket } from "lucide-react";
 import { api } from "@/lib/api-client";
+import { PublicShell } from "@/components/layout/public-shell";
 import { Button } from "@/components/ui/button";
 import { Route as RootRoute } from "./__root";
 
@@ -123,7 +124,7 @@ function SuccessPage(): JSX.Element {
     : "";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center px-4 py-8">
+    <PublicShell containerClassName="flex-1 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-sm">
         <div className="rounded-2xl bg-card overflow-hidden shadow-2xl">
           {/* Dark header with confetti + check */}
@@ -197,7 +198,7 @@ function SuccessPage(): JSX.Element {
           </div>
         </div>
       </div>
-    </div>
+    </PublicShell>
   );
 }
 

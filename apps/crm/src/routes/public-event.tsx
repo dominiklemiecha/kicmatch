@@ -23,6 +23,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { PublicShell } from "@/components/layout/public-shell";
 import { Route as RootRoute } from "./__root";
 
 type Step = "INVITE" | "BASE" | "FORM" | "CONFIRM" | "PAYMENT" | "DONE";
@@ -72,7 +73,7 @@ function PageShell({
   indicator?: string;
 }): JSX.Element {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+    <PublicShell>
       <div className="mx-auto w-full max-w-md px-4 py-6 sm:py-10">
         <div className="flex items-center justify-between mb-4">
           {onBack ? (
@@ -97,7 +98,7 @@ function PageShell({
         {title && <h1 className="text-2xl font-bold tracking-tight mt-4">{title}</h1>}
         <div className="mt-4">{children}</div>
       </div>
-    </div>
+    </PublicShell>
   );
 }
 
@@ -339,7 +340,7 @@ function PublicEventPage(): JSX.Element {
   // Step 1: Invite card
   if (step === "INVITE") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+      <PublicShell>
         <div className="mx-auto w-full max-w-md">
           {/* Hero image */}
           <div className="relative">
@@ -419,7 +420,7 @@ function PublicEventPage(): JSX.Element {
             </div>
           </div>
         </div>
-      </div>
+      </PublicShell>
     );
   }
 
