@@ -1,5 +1,6 @@
 import { createRoute, useParams } from "@tanstack/react-router";
 import { XCircle } from "lucide-react";
+import { PublicShell } from "@/components/layout/public-shell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Route as RootRoute } from "./__root";
@@ -7,7 +8,7 @@ import { Route as RootRoute } from "./__root";
 function CancelledPage(): JSX.Element {
   const { slug } = useParams({ strict: false }) as { slug: string };
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center px-4 py-8">
+    <PublicShell containerClassName="flex-1 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         <Card className="p-8 text-center space-y-5">
           <div className="mx-auto h-20 w-20 rounded-full bg-amber-100 flex items-center justify-center">
@@ -24,7 +25,7 @@ function CancelledPage(): JSX.Element {
           </a>
         </Card>
       </div>
-    </div>
+    </PublicShell>
   );
 }
 
