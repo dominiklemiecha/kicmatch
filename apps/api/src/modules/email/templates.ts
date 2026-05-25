@@ -28,7 +28,7 @@ ${preheader ? `<div style="display:none;font-size:1px;color:#f1f5f9;line-height:
 <tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:94%;background:#fff;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0">
 <tr><td style="padding:24px 24px 0;text-align:center">
-<div style="display:inline-block;font-size:22px;font-weight:800;color:#7c3aed;letter-spacing:-0.02em">kicmatch</div>
+<img src="${appUrl()}/logo.png" alt="Kicmatch" height="32" style="display:inline-block;height:32px;width:auto;border:0;outline:none" />
 </td></tr>
 <tr><td style="padding:20px 24px 28px">${body}</td></tr>
 <tr><td style="padding:18px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8">
