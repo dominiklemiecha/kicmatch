@@ -159,11 +159,8 @@ export function Topbar(): JSX.Element {
                         <Icon className={cn("h-4 w-4", v.color)} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium leading-tight truncate">{a.title}</div>
-                        {a.subtitle && (
-                          <div className="text-xs text-muted-foreground mt-0.5 truncate">{a.subtitle}</div>
-                        )}
-                        <div className="text-[11px] text-muted-foreground mt-1">{relativeTime(a.at)}</div>
+                        <div className="text-xs font-medium leading-snug break-words">{a.title}</div>
+                        <div className="text-[10px] text-muted-foreground mt-1">{relativeTime(a.at)}</div>
                       </div>
                     </div>
                   );
