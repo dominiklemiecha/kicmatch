@@ -13,13 +13,6 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
   // a fixed bottom nav with a slide-up sheet for the full menu instead.
   const native = isNative();
 
-  // Temporary diagnostic banner: confirm whether the WebView is detected as
-  // native. Remove once the bottom nav is verified working on real devices.
-  if (typeof window !== "undefined") {
-    // eslint-disable-next-line no-console, @typescript-eslint/no-explicit-any
-    console.log("[Kicmatch] isNative =", native, "platform =", (window as any).Capacitor?.getPlatform?.() ?? "web");
-  }
-
   if (native) {
     return (
       <div className="flex h-screen w-screen flex-col overflow-hidden bg-slate-50">
