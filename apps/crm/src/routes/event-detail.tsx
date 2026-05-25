@@ -40,6 +40,7 @@ import { EventSettingsPanel } from "@/features/events/event-settings-panel";
 import { InvitationsPanel } from "@/features/events/invitations-panel";
 import { ParticipantsPanel } from "@/features/events/participants-panel";
 import { PaymentsPanel } from "@/features/events/payments-panel";
+import { ShareButtons } from "@/components/share-buttons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -147,11 +148,24 @@ function EventDetailPage(): JSX.Element {
             </span>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <ArrowUpRight className="h-4 w-4" />
-            Anteprima
-          </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={`/e/${e.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Button variant="outline">
+              <ArrowUpRight className="h-4 w-4" />
+              Anteprima
+            </Button>
+          </a>
+          {e.status === "PUBLISHED" && (
+            <ShareButtons
+              url={`${typeof window !== "undefined" ? window.location.origin : ""}/e/${e.slug}`}
+              title={`Sei invitato a ${e.name}`}
+              compact
+            />
+          )}
         </div>
       </div>
 

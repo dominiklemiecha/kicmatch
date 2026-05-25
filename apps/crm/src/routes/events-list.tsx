@@ -3,6 +3,7 @@ import { Link, createRoute, useNavigate } from "@tanstack/react-router";
 import type { EventResponse } from "@kicmatch/shared";
 import { Calendar, MapPin, Plus } from "lucide-react";
 import { listEvents } from "@/features/events/events-api";
+import { ShareButtons } from "@/components/share-buttons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -56,10 +57,17 @@ function EventCard({ event }: { event: EventResponse }): JSX.Element {
               </div>
             )}
           </div>
-          <div className="mt-auto pt-3">
+          <div className="mt-auto pt-3 flex flex-wrap items-center gap-3">
             <Link to="/events/$id" params={{ id: event.id }}>
               <Button variant="outline" size="sm">Apri</Button>
             </Link>
+            {event.status === "PUBLISHED" && (
+              <ShareButtons
+                url={`${typeof window !== "undefined" ? window.location.origin : ""}/e/${event.slug}`}
+                title={`Sei invitato a ${event.name}`}
+                compact
+              />
+            )}
           </div>
         </div>
       </div>
