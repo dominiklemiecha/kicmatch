@@ -40,10 +40,29 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+      # Tell MinIO its public S3 endpoint so signed URLs match the host the browser sees
+      MINIO_SERVER_URL: https://s3.kicmatch.com
     volumes:
       - minio_data:/data
     networks:
       - internal
+      - dokploy-network
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dokploy-network
+      # S3 API on s3.kicmatch.com — port 9000 inside the container
+      - traefik.http.routers.kicmatch-s3.rule=Host(`s3.kicmatch.com`)
+      - traefik.http.routers.kicmatch-s3.entrypoints=websecure
+      - traefik.http.routers.kicmatch-s3.tls=true
+      - traefik.http.routers.kicmatch-s3.tls.certresolver=letsencrypt
+      - traefik.http.routers.kicmatch-s3.service=kicmatch-s3
+      - traefik.http.services.kicmatch-s3.loadbalancer.server.port=9000
+      # HTTP -> HTTPS redirect
+      - traefik.http.routers.kicmatch-s3-http.rule=Host(`s3.kicmatch.com`)
+      - traefik.http.routers.kicmatch-s3-http.entrypoints=web
+      - traefik.http.routers.kicmatch-s3-http.middlewares=kicmatch-s3-redirect
+      - traefik.http.middlewares.kicmatch-s3-redirect.redirectscheme.scheme=https
+      - traefik.http.middlewares.kicmatch-s3-redirect.redirectscheme.permanent=true
 
   api:
     build:
