@@ -9,9 +9,16 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext ts,tsx",
-    "test": "vitest run"
+    "test": "vitest run",
+    "cap:sync": "pnpm build && cap sync",
+    "cap:android": "pnpm cap:sync && cap open android",
+    "cap:ios": "pnpm cap:sync && cap open ios"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
     "@hookform/resolvers": "^5.2.2",
     "@kicmatch/shared": "workspace:*",
     "@radix-ui/react-avatar": "^1.1.11",
@@ -39,6 +46,7 @@
     "zustand": "^5.0.0"
   },
   "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
     "@tanstack/router-devtools": "^1.58.15",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

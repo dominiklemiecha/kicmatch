@@ -27,3 +27,16 @@ CLAUDE.md
 /3.jpeg
 /4.jpeg
 /5.jpeg
+
+# Capacitor / native build artifacts (the native projects themselves ARE tracked)
+apps/crm/android/.gradle/
+apps/crm/android/app/build/
+apps/crm/android/build/
+apps/crm/android/local.properties
+apps/crm/android/captures/
+apps/crm/android/.idea/
+apps/crm/ios/App/build/
+apps/crm/ios/App/Pods/
+apps/crm/ios/App/Podfile.lock
+apps/crm/ios/DerivedData/
+apps/crm/ios/.idea/

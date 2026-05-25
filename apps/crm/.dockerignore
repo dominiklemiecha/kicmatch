@@ -4,3 +4,6 @@ dist
 .env.local
 *.log
 .git
+# Native shells — not needed for the Dokploy web build
+android
+ios
