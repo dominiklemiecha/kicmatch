@@ -12,7 +12,7 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-slate-50 p-6">{children}</main>
       </div>
     </div>
   );
