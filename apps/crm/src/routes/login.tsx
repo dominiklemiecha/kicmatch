@@ -3,6 +3,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Link, createRoute, useNavigate } from "@tanstack/react-router";
 import { loginSchema, type LoginInput } from "@kicmatch/shared";
 import { AxiosError } from "axios";
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { AuthLayout } from "@/features/auth/auth-layout";
@@ -16,6 +17,21 @@ import { Route as RootRoute } from "./__root";
 function LoginPage(): JSX.Element {
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
+  const user = useAuthStore((s) => s.user);
+  const status = useAuthStore((s) => s.status);
+
+  // If a session is already restored, skip the login form and route to the
+  // correct landing area. Useful for the native app shell that always lands
+  // here on launch.
+  useEffect(() => {
+    if (status === "authenticated" && user) {
+      void navigate({
+        to: user.role === "SUPERADMIN" ? "/admin" : "/dashboard",
+        replace: true,
+      });
+    }
+  }, [status, user, navigate]);
+
   const form = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
