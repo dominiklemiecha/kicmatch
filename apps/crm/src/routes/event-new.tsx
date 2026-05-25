@@ -1,14 +1,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { Link, createRoute, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link, createRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { createEventSchema, type CreateEventInput } from "@kicmatch/shared";
 import { AxiosError } from "axios";
 import { ChevronLeft, ImagePlus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-import { createEvent } from "@/features/events/events-api";
+import { createEvent, getEvent, updateEvent } from "@/features/events/events-api";
 import { api } from "@/lib/api-client";
 import { useEventWizardStore } from "@/features/events/event-wizard-store";
 import { Button } from "@/components/ui/button";
@@ -57,6 +57,8 @@ function StepHeader({ current, total }: { current: number; total: number }): JSX
 function EventNewPage(): JSX.Element {
   const navigate = useNavigate();
   const setEventId = useEventWizardStore((s) => s.setEventId);
+  const search = useSearch({ strict: false }) as { id?: string };
+  const editingId = search?.id ?? null;
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
@@ -75,15 +77,43 @@ function EventNewPage(): JSX.Element {
 
   const locationType = form.watch("locationType");
 
+  // Load existing event in edit mode
+  const eventQuery = useQuery({
+    queryKey: ["event", editingId],
+    queryFn: () => getEvent(editingId!),
+    enabled: !!editingId,
+  });
+
+  useEffect(() => {
+    if (!eventQuery.data) return;
+    const e = eventQuery.data;
+    const dt = new Date(e.startAt);
+    const date = dt.toISOString().slice(0, 10);
+    const time = dt.toTimeString().slice(0, 5);
+    form.reset({
+      name: e.name,
+      description: e.description ?? "",
+      date,
+      time,
+      locationType: e.locationType as "PHYSICAL" | "ONLINE",
+      locationName: e.locationName ?? "",
+      onlineUrl: e.onlineUrl ?? "",
+      coverImageUrl: e.coverImageUrl ?? "",
+    });
+    if (e.coverImageUrl) setCoverPreview(e.coverImageUrl);
+  }, [eventQuery.data, form]);
+
   const mutation = useMutation({
-    mutationFn: (input: CreateEventInput) => createEvent(input),
+    mutationFn: (input: CreateEventInput) =>
+      editingId ? updateEvent(editingId, input) : createEvent(input),
     onSuccess: (data) => {
       setEventId(data.id);
-      toast.success("Evento creato. Proseguiamo con gli inviti.");
-      void navigate({ to: "/events/$id/inviti", params: { id: data.id } });
+      const next = editingId ? "/events/$id/riepilogo" : "/events/$id/inviti";
+      toast.success(editingId ? "Modifiche salvate" : "Evento creato. Proseguiamo con gli inviti.");
+      void navigate({ to: next, params: { id: data.id } });
     },
     onError: (error: AxiosError<{ message?: string }>) => {
-      toast.error(error.response?.data?.message ?? "Errore creazione evento");
+      toast.error(error.response?.data?.message ?? "Errore salvataggio evento");
     },
   });
 
@@ -126,12 +156,16 @@ function EventNewPage(): JSX.Element {
         <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">1/5</span>
       </div>
 
-      <StepHeader current={1} total={5} />
+      {!editingId && <StepHeader current={1} total={5} />}
 
       <div>
-        <div className="text-xs font-semibold uppercase tracking-wide text-primary">Step 1</div>
+        <div className="text-xs font-semibold uppercase tracking-wide text-primary">
+          {editingId ? "Modifica" : "Step 1"}
+        </div>
         <h1 className="text-2xl font-bold tracking-tight mt-1">Dettagli evento</h1>
-        <p className="text-muted-foreground text-sm mt-1">Imposta le informazioni principali</p>
+        <p className="text-muted-foreground text-sm mt-1">
+          {editingId ? "Aggiorna le informazioni principali" : "Imposta le informazioni principali"}
+        </p>
       </div>
 
       <Card className="p-6">
@@ -283,8 +317,12 @@ function EventNewPage(): JSX.Element {
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button type="submit" disabled={mutation.isPending}>
-                {mutation.isPending ? "Salvataggio..." : "Continua"}
+              <Button type="submit" disabled={mutation.isPending || eventQuery.isLoading}>
+                {mutation.isPending
+                  ? "Salvataggio..."
+                  : editingId
+                    ? "Salva modifiche"
+                    : "Continua"}
               </Button>
             </div>
           </form>

@@ -60,7 +60,7 @@ function EventRiepilogoPage(): JSX.Element {
             <div className="flex items-start justify-between gap-2">
               <h2 className="text-xl font-bold">{e.name}</h2>
               <button
-                onClick={() => void navigate({ to: "/events/new" })}
+                onClick={() => void navigate({ to: "/events/new", search: { id } })}
                 className="text-muted-foreground hover:text-foreground"
                 aria-label="Modifica"
                 title="Modifica"
