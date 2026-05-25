@@ -45,21 +45,33 @@ export class DashboardController {
         take: 3,
       }),
     ]);
-    const confirmedCount = participants.filter((p) => p.status === "CONFIRMED" || p.status === "PAID").length;
+    // A participant counts as "really enrolled" only when the last step is done:
+    // free events => status CONFIRMED, paid events => status PAID
+    const eventIsPaidById = new Map(userEvents.map((e) => [e.id, e.isPaid]));
+    const isCompleted = (p: { status: string; eventId: string }): boolean => {
+      const paid = eventIsPaidById.get(p.eventId) ?? false;
+      return paid ? p.status === "PAID" : p.status === "CONFIRMED";
+    };
+    const completedParticipants = participants.filter(isCompleted);
+
+    const confirmedCount = completedParticipants.length;
     const paidCount = participants.filter((p) => p.status === "PAID").length;
     const revenueCents = payments.reduce((acc, p) => acc + p.amountCents, 0);
     const currency = payments[0]?.currency ?? "EUR";
 
     const buckets = this.last7DaysBuckets();
     const counts = new Map<string, number>(buckets.map((b) => [b.key, 0]));
-    for (const p of participants) {
+    for (const p of completedParticipants) {
       const k = p.createdAt.toISOString().slice(0, 10);
       if (counts.has(k)) counts.set(k, (counts.get(k) ?? 0) + 1);
     }
     const enrollmentTrend = buckets.map((b) => ({ date: b.label, v: counts.get(b.key) ?? 0 }));
 
+    const confirmedFreeCount = participants.filter(
+      (p) => p.status === "CONFIRMED" && !(eventIsPaidById.get(p.eventId) ?? false),
+    ).length;
     const statusBreakdown = [
-      { name: "Confermati", value: participants.filter((p) => p.status === "CONFIRMED").length, color: "#7c3aed" },
+      { name: "Confermati", value: confirmedFreeCount, color: "#7c3aed" },
       { name: "Pagati", value: paidCount, color: "#ec4899" },
       { name: "In attesa", value: participants.filter((p) => p.status === "PENDING_PAYMENT").length, color: "#fb923c" },
       { name: "Rifiutati", value: participants.filter((p) => p.status === "REJECTED" || p.status === "CANCELLED").length, color: "#94a3b8" },
