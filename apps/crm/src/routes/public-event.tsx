@@ -384,10 +384,15 @@ function PublicEventPage(): JSX.Element {
               <div className="space-y-2.5 text-sm border-t pt-4">
                 {e.availableSpots !== null && (
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-md bg-muted text-muted-foreground flex items-center justify-center shrink-0">
+                    <div className={cn(
+                      "h-8 w-8 rounded-md flex items-center justify-center shrink-0",
+                      e.availableSpots === 0 ? "bg-rose-100 text-rose-600" : "bg-muted text-muted-foreground",
+                    )}>
                       <Users className="h-4 w-4" />
                     </div>
-                    <span>{e.availableSpots} posti disponibili</span>
+                    <span className={e.availableSpots === 0 ? "font-semibold text-rose-700" : ""}>
+                      {e.availableSpots === 0 ? "Posti esauriti" : `${e.availableSpots} posti disponibili`}
+                    </span>
                   </div>
                 )}
                 <div className="flex items-center gap-3">
@@ -414,9 +419,18 @@ function PublicEventPage(): JSX.Element {
                 Organizzato da <span className="font-medium text-foreground">{e.organizerName}</span>
               </div>
 
-              <Button size="lg" className="w-full rounded-xl" onClick={() => setStep("BASE")}>
-                Conferma partecipazione
-              </Button>
+              {e.availableSpots === 0 ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-center">
+                  <div className="font-semibold text-rose-700">Posti esauriti</div>
+                  <div className="text-xs text-rose-600/80 mt-1">
+                    Le iscrizioni per questo evento sono chiuse perché è stata raggiunta la capienza massima.
+                  </div>
+                </div>
+              ) : (
+                <Button size="lg" className="w-full rounded-xl" onClick={() => setStep("BASE")}>
+                  Conferma partecipazione
+                </Button>
+              )}
             </div>
           </div>
         </div>
