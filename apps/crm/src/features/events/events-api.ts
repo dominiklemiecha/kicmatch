@@ -27,6 +27,15 @@ export async function publishEvent(id: string): Promise<EventResponse> {
   return res.data;
 }
 
+export async function closeEvent(id: string): Promise<EventResponse> {
+  const res = await api.post<EventResponse>(`/events/${id}/close`);
+  return res.data;
+}
+
+export async function deleteEvent(id: string): Promise<void> {
+  await api.delete(`/events/${id}`);
+}
+
 export async function getEventForm(id: string): Promise<EventFormResponse> {
   const res = await api.get<EventFormResponse>(`/events/${id}/form`);
   return res.data;

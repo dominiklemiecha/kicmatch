@@ -74,14 +74,36 @@ export class EventsService {
 
   async publish(userId: string, id: string): Promise<Event> {
     const ev = await this.getById(userId, id);
-    if (ev.status !== "DRAFT") throw new BadRequestException("Solo eventi in bozza possono essere pubblicati");
+    if (ev.status !== "DRAFT" && ev.status !== "CLOSED") {
+      throw new BadRequestException("Solo eventi in bozza o disattivati possono essere pubblicati");
+    }
     if (ev.isPaid && (ev.priceCents === null || ev.priceCents <= 0)) {
       throw new BadRequestException("Prezzo richiesto per evento a pagamento");
     }
     return this.prisma.event.update({
       where: { id },
-      data: { status: "PUBLISHED", publishedAt: new Date() },
+      data: { status: "PUBLISHED", publishedAt: ev.publishedAt ?? new Date() },
     });
+  }
+
+  async close(userId: string, id: string): Promise<Event> {
+    const ev = await this.getById(userId, id);
+    if (ev.status !== "PUBLISHED") {
+      throw new BadRequestException("Solo eventi pubblicati possono essere disattivati");
+    }
+    return this.prisma.event.update({ where: { id }, data: { status: "CLOSED" } });
+  }
+
+  async remove(userId: string, id: string): Promise<void> {
+    await this.getById(userId, id);
+    // Cascade-delete dependent rows in a single transaction.
+    await this.prisma.$transaction([
+      this.prisma.payment.deleteMany({ where: { participant: { eventId: id } } }),
+      this.prisma.participant.deleteMany({ where: { eventId: id } }),
+      this.prisma.invitation.deleteMany({ where: { eventId: id } }),
+      this.prisma.eventForm.deleteMany({ where: { eventId: id } }),
+      this.prisma.event.delete({ where: { id } }),
+    ]);
   }
 
   async getForm(userId: string, eventId: string): Promise<{ id: string; eventId: string; fields: unknown; privacyRequired: boolean; updatedAt: Date } | null> {

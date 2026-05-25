@@ -9,6 +9,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { createEvent, getEvent, updateEvent } from "@/features/events/events-api";
+import { WizardSteps } from "@/features/events/wizard-steps";
 import { api } from "@/lib/api-client";
 import { useEventWizardStore } from "@/features/events/event-wizard-store";
 import { Button } from "@/components/ui/button";
@@ -156,7 +157,11 @@ function EventNewPage(): JSX.Element {
         <span className="text-xs font-medium text-muted-foreground bg-muted px-2.5 py-1 rounded-full">1/5</span>
       </div>
 
-      {!editingId && <StepHeader current={1} total={5} />}
+      {editingId ? (
+        <WizardSteps eventId={editingId} currentStep={1} />
+      ) : (
+        <StepHeader current={1} total={5} />
+      )}
 
       <div>
         <div className="text-xs font-semibold uppercase tracking-wide text-primary">

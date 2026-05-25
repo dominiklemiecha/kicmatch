@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft } from "lucide-react";
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { WizardSteps } from "./wizard-steps";
 
 interface StepDef { path: string; label: string }
 export const WIZARD_STEPS: StepDef[] = [
@@ -20,7 +20,7 @@ interface EventWizardShellProps {
   children: ReactNode;
 }
 
-export function EventWizardShell({ eventId: _eventId, currentStep, totalSteps = 5, title, subtitle, children }: EventWizardShellProps): JSX.Element {
+export function EventWizardShell({ eventId, currentStep, totalSteps = 5, title, subtitle, children }: EventWizardShellProps): JSX.Element {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
@@ -31,11 +31,7 @@ export function EventWizardShell({ eventId: _eventId, currentStep, totalSteps = 
           {currentStep}/{totalSteps}
         </span>
       </div>
-      <div className="flex items-center gap-2">
-        {Array.from({ length: totalSteps }).map((_, i) => (
-          <div key={i} className={cn("h-1.5 flex-1 rounded-full", i < currentStep ? "bg-primary" : "bg-muted")} />
-        ))}
-      </div>
+      <WizardSteps eventId={eventId} currentStep={currentStep} />
       <div>
         <div className="text-xs font-semibold uppercase tracking-wide text-primary">Step {currentStep}</div>
         <h1 className="text-2xl font-bold tracking-tight mt-1">{title}</h1>

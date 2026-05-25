@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Patch, Post, Put, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   createEventSchema,
@@ -87,6 +87,19 @@ export class EventsController {
   async publish(@CurrentUser() user: JwtPayload, @Param("id") id: string): Promise<EventResponse> {
     const ev = await this.events.publish(user.sub, id);
     return toResponse(ev);
+  }
+
+  @Post(":id/close")
+  @HttpCode(200)
+  async close(@CurrentUser() user: JwtPayload, @Param("id") id: string): Promise<EventResponse> {
+    const ev = await this.events.close(user.sub, id);
+    return toResponse(ev);
+  }
+
+  @Delete(":id")
+  @HttpCode(204)
+  async remove(@CurrentUser() user: JwtPayload, @Param("id") id: string): Promise<void> {
+    await this.events.remove(user.sub, id);
   }
 
   @Get(":id/form")
