@@ -5,13 +5,10 @@ import { api } from "@/lib/api-client";
 import {
   ArrowLeft,
   ArrowUpRight,
-  Bell,
   Bookmark,
   Calendar,
   CheckCircle2,
-  Clock,
   CreditCard,
-  Lightbulb,
   Mail,
   MapPin,
   QrCode,
@@ -245,27 +242,6 @@ function EventDetailPage(): JSX.Element {
             </Card>
           </div>
 
-          <Card className="p-5">
-            <div className="text-sm font-semibold mb-4">Prossimi passi consigliati</div>
-            <div className="space-y-2.5">
-              <NextStep icon={Settings} label="Completa le informazioni dell'evento" />
-              <NextStep icon={Mail} label="Personalizza email di invito" />
-              <NextStep icon={Bell} label="Imposta promemoria agli invitati" />
-              <NextStep icon={QrCode} label="Scarica l'app per il check-in" />
-            </div>
-            <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 flex gap-3">
-              <Lightbulb className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <div className="font-medium text-amber-900">Suggerimento</div>
-                <div className="text-amber-800 mt-0.5">
-                  Aggiungi il QR code all'ingresso per velocizzare il check-in il giorno dell'evento.
-                </div>
-                <a href="#" className="inline-flex items-center text-amber-900 font-medium hover:underline mt-1 text-xs">
-                  Scopri di più →
-                </a>
-              </div>
-            </div>
-          </Card>
         </TabsContent>
 
         <TabsContent value="partecipanti" className="mt-6">
@@ -313,17 +289,6 @@ function KpiCard({ label, value, icon: Icon, iconBg, iconColor }: KpiCardProps):
         </div>
       </div>
     </Card>
-  );
-}
-
-function NextStep({ icon: Icon, label }: { icon: typeof Bookmark; label: string }): JSX.Element {
-  return (
-    <div className="flex items-center gap-3 rounded-md border bg-muted/20 px-3 py-2 text-sm">
-      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-      <Icon className="h-4 w-4 text-primary" />
-      <span className="flex-1">{label}</span>
-      <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground" />
-    </div>
   );
 }
 
