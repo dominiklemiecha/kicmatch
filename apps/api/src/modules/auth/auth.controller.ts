@@ -48,6 +48,29 @@ export class AuthController {
     return { accessToken, user: this.toMe(user) };
   }
 
+  @Post("forgot-password")
+  @HttpCode(202)
+  async forgotPassword(
+    @Body(new ZodValidationPipe(z.object({ email: z.string().email() })))
+    body: { email: string },
+  ): Promise<{ ok: true }> {
+    await this.auth.requestPasswordReset(body.email);
+    return { ok: true };
+  }
+
+  @Post("reset-password")
+  @HttpCode(200)
+  async resetPassword(
+    @Body(new ZodValidationPipe(z.object({
+      token: z.string().min(32),
+      password: z.string().min(8).max(120),
+    })))
+    body: { token: string; password: string },
+  ): Promise<{ ok: true }> {
+    await this.auth.resetPassword(body.token, body.password);
+    return { ok: true };
+  }
+
   @Post("logout")
   @HttpCode(204)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {

@@ -16,6 +16,7 @@ import { Route as EventPubblicatoRoute } from "./routes/event-pubblicato";
 import { Route as EventRiepilogoRoute } from "./routes/event-riepilogo";
 import { Route as EventsListRoute } from "./routes/events-list";
 import { Route as ForgotPasswordRoute } from "./routes/forgot-password";
+import { Route as ResetPasswordRoute } from "./routes/reset-password";
 import { Route as FunzionalitaRoute } from "./routes/funzionalita";
 import { Route as FormsGlobalRoute } from "./routes/forms-global";
 import { Route as ImportsGlobalRoute } from "./routes/imports-global";
@@ -86,6 +87,7 @@ const routeTree = RootRoute.addChildren([
   RegisterDoneRoute,
   RegisterOnboardingRoute,
   ForgotPasswordRoute,
+  ResetPasswordRoute,
 ]);
 
 export const router = createRouter({ routeTree, defaultPreload: "intent" });

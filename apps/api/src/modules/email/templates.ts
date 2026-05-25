@@ -191,6 +191,20 @@ export function invitationEmail(event: BaseEvent, organizerName: string, inviteU
   return shell("Sei invitato", body, `${organizerName} ti invita a ${event.name}`);
 }
 
+export function passwordResetEmail(firstName: string, resetUrl: string): string {
+  const body = `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 12px"><tr><td>
+      <div style="width:56px;height:56px;border-radius:50%;background:#ede9fe;text-align:center;line-height:56px;font-size:24px">🔒</div>
+    </td></tr></table>
+    <h1 class="h1" style="margin:0 0 8px;font-size:24px;font-weight:700;text-align:center;color:#0f172a;line-height:1.2">Reimposta la tua password</h1>
+    <p style="margin:0 0 20px;color:#475569;text-align:center;font-size:15px">Ciao ${firstName}, hai richiesto di reimpostare la password del tuo account Kicmatch. Clicca il pulsante qui sotto per scegliere una nuova password.</p>
+    ${button(resetUrl, "Reimposta password")}
+    <p style="margin:24px 0 6px;color:#64748b;font-size:13px;text-align:center">Il link è valido per <strong style="color:#0f172a">1 ora</strong> e può essere usato una sola volta.</p>
+    <p style="margin:0;color:#94a3b8;font-size:12px;text-align:center">Se non sei stato tu, ignora questa email: nessuna modifica verrà effettuata.</p>
+  `;
+  return shell("Reimposta password Kicmatch", body, "Link per reimpostare la tua password");
+}
+
 export function welcomeOrganizerEmail(firstName: string, dashboardUrl: string): string {
   const body = `
     <h1 class="h1" style="margin:0 0 8px;font-size:24px;font-weight:700;text-align:center;color:#0f172a;line-height:1.2">Benvenuto su Kicmatch, ${firstName}! 👋</h1>

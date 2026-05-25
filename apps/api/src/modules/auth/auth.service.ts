@@ -8,7 +8,7 @@ import { PrismaService } from "../../common/prisma/prisma.service";
 import type { Env } from "../../config/env.schema";
 import type { LoginInput, RegisterInput } from "@kicmatch/shared";
 import { EmailService } from "../email/email.service";
-import { welcomeOrganizerEmail } from "../email/templates";
+import { passwordResetEmail, welcomeOrganizerEmail } from "../email/templates";
 import type { JwtPayload } from "./jwt.strategy";
 
 const REFRESH_TTL_DAYS = 30;
@@ -72,6 +72,43 @@ export class AuthService {
 
   async getUser(userId: string): Promise<User | null> {
     return this.prisma.user.findUnique({ where: { id: userId } });
+  }
+
+  async requestPasswordReset(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    // Do not reveal whether the email exists. Silently succeed if not found.
+    if (!user || user.isBlocked) return;
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = this.hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1h
+    await this.prisma.passwordResetToken.create({
+      data: { userId: user.id, tokenHash, expiresAt },
+    });
+    const appUrl = this.config.get("APP_PUBLIC_URL", { infer: true }) ?? "";
+    const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
+    void this.email.send({
+      to: user.email,
+      subject: "Reimposta la tua password Kicmatch",
+      html: passwordResetEmail(user.firstName, resetUrl),
+    });
+  }
+
+  async resetPassword(rawToken: string, newPassword: string): Promise<void> {
+    const tokenHash = this.hashToken(rawToken);
+    const record = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash } });
+    if (!record || record.usedAt || record.expiresAt < new Date()) {
+      throw new UnauthorizedException("Link non valido o scaduto");
+    }
+    const passwordHash = await argon2.hash(newPassword);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+      this.prisma.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
+      // Revoke all active refresh tokens — force re-login on every device
+      this.prisma.refreshToken.updateMany({
+        where: { userId: record.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
   }
 
   async updateProfile(userId: string, body: Record<string, unknown>): Promise<User> {
