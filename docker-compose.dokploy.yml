@@ -42,6 +42,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
       # Tell MinIO its public S3 endpoint so signed URLs match the host the browser sees
       MINIO_SERVER_URL: https://s3.kicmatch.com
+      # CORS: allow the CRM to PUT directly from the browser via presigned URLs
+      MINIO_API_CORS_ALLOW_ORIGIN: "https://www.kicmatch.com,https://kicmatch.com"
     volumes:
       - minio_data:/data
     networks:
