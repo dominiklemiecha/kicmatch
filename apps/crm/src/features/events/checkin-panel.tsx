@@ -1,8 +1,9 @@
 import { BarcodeFormat, BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
+import type { PluginListenerHandle } from "@capacitor/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import jsQR from "jsqr";
-import { Camera, CameraOff, CheckCircle2, QrCode, RotateCcw, XCircle } from "lucide-react";
+import { Camera, CameraOff, CheckCircle2, QrCode, RotateCcw, X, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
@@ -46,6 +47,8 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
   const lastScanAtRef = useRef<number>(0);
 
   const [cameraOn, setCameraOn] = useState(false);
+  const [nativeScanning, setNativeScanning] = useState(false);
+  const nativeListenerRef = useRef<PluginListenerHandle | null>(null);
   const [manualCode, setManualCode] = useState("");
   const [lastResult, setLastResult] = useState<{ ok: boolean; message: string; participant?: ScanResult } | null>(null);
 
@@ -122,10 +125,26 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
   };
 
   /**
-   * Native scanner: opens a full-screen ML Kit scanner that returns the first
-   * detected QR. Re-prompts permission if needed. Designed to be tapped
-   * repeatedly: each scan = one check-in.
+   * Native scanner using ML Kit's startScan API (bundled variant, no Play
+   * Services dependency). The camera shows behind the WebView while we render
+   * an overlay scan frame + cancel button in HTML.
    */
+  const stopNativeScan = async (): Promise<void> => {
+    try {
+      await BarcodeScanner.stopScan();
+    } catch {
+      /* ignore */
+    }
+    try {
+      await nativeListenerRef.current?.remove();
+    } catch {
+      /* ignore */
+    }
+    nativeListenerRef.current = null;
+    document.body.classList.remove("kc-native-scan");
+    setNativeScanning(false);
+  };
+
   const scanNative = async (): Promise<void> => {
     try {
       const supported = await BarcodeScanner.isSupported();
@@ -133,8 +152,6 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
         toast.error("Scanner non supportato su questo dispositivo");
         return;
       }
-      // Using the bundled ML Kit variant (see app/build.gradle), so no
-      // Play Services module download is needed.
       const perm = await BarcodeScanner.checkPermissions();
       if (perm.camera !== "granted") {
         const req = await BarcodeScanner.requestPermissions();
@@ -143,20 +160,31 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
           return;
         }
       }
-      const { barcodes } = await BarcodeScanner.scan({ formats: [BarcodeFormat.QrCode] });
-      const first = barcodes[0]?.rawValue;
-      if (!first) {
-        toast("Nessun QR rilevato");
-        return;
-      }
-      scanMut.mutate(first);
+      // Make the WebView transparent so the camera feed becomes visible.
+      document.body.classList.add("kc-native-scan");
+      setNativeScanning(true);
+
+      nativeListenerRef.current = await BarcodeScanner.addListener("barcodeScanned", async (event) => {
+        const value = event.barcode?.rawValue;
+        if (!value) return;
+        await stopNativeScan();
+        scanMut.mutate(value);
+      });
+      await BarcodeScanner.startScan({ formats: [BarcodeFormat.QrCode] });
     } catch (err) {
+      await stopNativeScan();
       const msg = err instanceof Error ? err.message : "Errore scanner";
       toast.error(msg);
     }
   };
 
-  useEffect(() => stopCamera, []);
+  useEffect(() => {
+    return (): void => {
+      stopCamera();
+      void stopNativeScan();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleManual = (): void => {
     if (!manualCode.trim()) return;
@@ -268,6 +296,22 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
           <Button onClick={handleManual} disabled={!manualCode.trim() || scanMut.isPending}>Conferma</Button>
         </div>
       </Card>
+
+      {/* Native scanner overlay (camera shows under transparent WebView) */}
+      {nativeScanning && (
+        <div className="kc-scan-overlay">
+          <div className="kc-scan-frame" />
+          <div className="kc-scan-hint">Inquadra il QR del partecipante</div>
+          <button
+            type="button"
+            onClick={() => void stopNativeScan()}
+            className="kc-scan-cancel"
+            aria-label="Annulla scansione"
+          >
+            <X className="h-5 w-5" /> Annulla
+          </button>
+        </div>
+      )}
     </div>
   );
 }
