@@ -40,6 +40,14 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
+    // Bundled ML Kit barcode scanner — works without Google Play Services
+    implementation 'com.google.mlkit:barcode-scanning:17.3.0'
+}
+
+// Exclude the play-services-mlkit variant pulled by @capacitor-mlkit so the
+// bundled implementation above is used instead.
+configurations.all {
+    exclude group: 'com.google.android.gms', module: 'play-services-mlkit-barcode-scanning'
 }
 
 apply from: 'capacitor.build.gradle'
