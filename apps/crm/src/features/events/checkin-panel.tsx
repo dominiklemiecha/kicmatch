@@ -1,13 +1,15 @@
+import { BarcodeFormat, BarcodeScanner } from "@capacitor-mlkit/barcode-scanning";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import jsQR from "jsqr";
-import { Camera, CameraOff, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
+import { Camera, CameraOff, CheckCircle2, QrCode, RotateCcw, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { isNative } from "@/lib/platform";
 
 interface ScanResult {
   participantId: string;
@@ -33,6 +35,9 @@ async function getCheckinStats(eventId: string): Promise<{ total: number; checke
 
 export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
   const qc = useQueryClient();
+  const native = isNative();
+
+  // web-only refs (jsQR scanner loop)
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -44,7 +49,12 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
   const [manualCode, setManualCode] = useState("");
   const [lastResult, setLastResult] = useState<{ ok: boolean; message: string; participant?: ScanResult } | null>(null);
 
-  const statsQ = useQuery({ queryKey: ["checkin-stats", eventId], queryFn: () => getCheckinStats(eventId), enabled: Boolean(eventId), refetchInterval: 5000 });
+  const statsQ = useQuery({
+    queryKey: ["checkin-stats", eventId],
+    queryFn: () => getCheckinStats(eventId),
+    enabled: Boolean(eventId),
+    refetchInterval: 5000,
+  });
 
   const scanMut = useMutation({
     mutationFn: (code: string) => scanTicket(eventId, code),
@@ -71,7 +81,7 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
     setCameraOn(false);
   };
 
-  const startCamera = async (): Promise<void> => {
+  const startWebCamera = async (): Promise<void> => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
       streamRef.current = stream;
@@ -111,6 +121,41 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
     rafRef.current = requestAnimationFrame(scanLoop);
   };
 
+  /**
+   * Native scanner: opens a full-screen ML Kit scanner that returns the first
+   * detected QR. Re-prompts permission if needed. Designed to be tapped
+   * repeatedly: each scan = one check-in.
+   */
+  const scanNative = async (): Promise<void> => {
+    try {
+      const supported = await BarcodeScanner.isSupported();
+      if (!supported.supported) {
+        toast.error("Scanner non supportato su questo dispositivo");
+        return;
+      }
+      // Using the bundled ML Kit variant (see app/build.gradle), so no
+      // Play Services module download is needed.
+      const perm = await BarcodeScanner.checkPermissions();
+      if (perm.camera !== "granted") {
+        const req = await BarcodeScanner.requestPermissions();
+        if (req.camera !== "granted") {
+          toast.error("Permesso fotocamera negato");
+          return;
+        }
+      }
+      const { barcodes } = await BarcodeScanner.scan({ formats: [BarcodeFormat.QrCode] });
+      const first = barcodes[0]?.rawValue;
+      if (!first) {
+        toast("Nessun QR rilevato");
+        return;
+      }
+      scanMut.mutate(first);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Errore scanner";
+      toast.error(msg);
+    }
+  };
+
   useEffect(() => stopCamera, []);
 
   const handleManual = (): void => {
@@ -136,34 +181,57 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
       </Card>
 
       {/* Scanner */}
-      <Card className="overflow-hidden">
-        <div className="p-5 border-b">
-          <div className="font-semibold">Scanner QR</div>
-          <p className="text-xs text-muted-foreground mt-0.5">Inquadra il codice biglietto del partecipante</p>
-        </div>
-        <div className="relative bg-black aspect-square sm:aspect-video max-h-96">
-          <video ref={videoRef} className="absolute inset-0 h-full w-full object-cover" playsInline muted />
-          <canvas ref={canvasRef} className="hidden" />
-          {!cameraOn && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 gap-3">
-              <Camera className="h-12 w-12" />
-              <Button variant="secondary" onClick={() => void startCamera()}>Avvia fotocamera</Button>
-            </div>
-          )}
-          {cameraOn && (
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-x-1/4 inset-y-1/4 border-2 border-primary/80 rounded-lg" />
-            </div>
-          )}
-        </div>
-        {cameraOn && (
-          <div className="p-3 border-t flex justify-center">
-            <Button variant="outline" size="sm" onClick={stopCamera}>
-              <CameraOff className="h-4 w-4" /> Ferma fotocamera
-            </Button>
+      {native ? (
+        <Card className="p-6 text-center space-y-4">
+          <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <QrCode className="h-8 w-8 text-primary" />
           </div>
-        )}
-      </Card>
+          <div>
+            <div className="font-semibold">Scanner QR nativo</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Apri la fotocamera del telefono e inquadra il QR del partecipante
+            </p>
+          </div>
+          <Button
+            size="lg"
+            className="w-full"
+            onClick={() => void scanNative()}
+            disabled={scanMut.isPending}
+          >
+            <Camera className="h-5 w-5 mr-2" />
+            {scanMut.isPending ? "Verifica in corso…" : "Scansiona QR"}
+          </Button>
+        </Card>
+      ) : (
+        <Card className="overflow-hidden">
+          <div className="p-5 border-b">
+            <div className="font-semibold">Scanner QR</div>
+            <p className="text-xs text-muted-foreground mt-0.5">Inquadra il codice biglietto del partecipante</p>
+          </div>
+          <div className="relative bg-black aspect-square sm:aspect-video max-h-96">
+            <video ref={videoRef} className="absolute inset-0 h-full w-full object-cover" playsInline muted />
+            <canvas ref={canvasRef} className="hidden" />
+            {!cameraOn && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 gap-3">
+                <Camera className="h-12 w-12" />
+                <Button variant="secondary" onClick={() => void startWebCamera()}>Avvia fotocamera</Button>
+              </div>
+            )}
+            {cameraOn && (
+              <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-x-1/4 inset-y-1/4 border-2 border-primary/80 rounded-lg" />
+              </div>
+            )}
+          </div>
+          {cameraOn && (
+            <div className="p-3 border-t flex justify-center">
+              <Button variant="outline" size="sm" onClick={stopCamera}>
+                <CameraOff className="h-4 w-4" /> Ferma fotocamera
+              </Button>
+            </div>
+          )}
+        </Card>
+      )}
 
       {/* Last result */}
       {lastResult && (
@@ -190,7 +258,13 @@ export function CheckinPanel({ eventId }: CheckinPanelProps): JSX.Element {
         <div className="font-semibold text-sm">Inserimento manuale</div>
         <p className="text-xs text-muted-foreground">Inserisci il codice se non riesci a scansionare il QR</p>
         <div className="flex gap-2">
-          <Input placeholder="KIC-XXXX-XXXX-XXXX" value={manualCode} onChange={(e) => setManualCode(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleManual(); }} className="font-mono" />
+          <Input
+            placeholder="KIC-XXXX-XXXX-XXXX"
+            value={manualCode}
+            onChange={(e) => setManualCode(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleManual(); }}
+            className="font-mono"
+          />
           <Button onClick={handleManual} disabled={!manualCode.trim() || scanMut.isPending}>Conferma</Button>
         </div>
       </Card>
