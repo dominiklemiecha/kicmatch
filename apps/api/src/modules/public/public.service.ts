@@ -3,6 +3,7 @@ import type { Event, Participant } from "@prisma/client";
 import { randomBytes } from "crypto";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { EmailService } from "../email/email.service";
+import { PushService } from "../push/push.service";
 import { paymentConfirmationEmail, rsvpConfirmationEmail, ticketEmail } from "../email/templates";
 
 // (ticketQrAttachment removed — QR is now served via /api/v1/public/tickets/:code/qr.png)
@@ -15,7 +16,11 @@ function generateTicketCode(): string {
 
 @Injectable()
 export class PublicService {
-  constructor(private readonly prisma: PrismaService, private readonly email: EmailService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly email: EmailService,
+    private readonly push: PushService,
+  ) {}
 
   async getBySlug(slug: string) {
     const event = await this.prisma.event.findUnique({
@@ -118,6 +123,12 @@ export class PublicService {
           html: ticketEmail(event, { firstName: participant.firstName, ticketCode: participant.ticketCode }),
         });
       }
+      // Push the organizer about the new sign-up (best-effort, never blocks)
+      void this.push.sendToUser(event.userId, {
+        title: "Nuova iscrizione",
+        body: `${participant.firstName} ${participant.lastName} si è iscritto a ${event.name}`,
+        data: { eventId: event.id, type: "RSVP" },
+      });
     }
     return { participant, requiresPayment, event };
   }
@@ -174,6 +185,13 @@ export class PublicService {
           html: ticketEmail(refreshed.event, { firstName: refreshed.firstName, ticketCode: refreshed.ticketCode }),
         });
       }
+      // Push the organizer about the payment (best-effort)
+      const amount = new Intl.NumberFormat("it-IT", { style: "currency", currency: payment.currency }).format(payment.amountCents / 100);
+      void this.push.sendToUser(refreshed.event.userId, {
+        title: "Pagamento ricevuto",
+        body: `${refreshed.firstName} ${refreshed.lastName} ha pagato ${amount} per ${refreshed.event.name}`,
+        data: { eventId: refreshed.event.id, type: "PAYMENT" },
+      });
     }
   }
 

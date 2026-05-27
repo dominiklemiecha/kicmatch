@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { AuthLayout } from "@/features/auth/auth-layout";
 import { loginRequest } from "@/features/auth/auth-api";
 import { useAuthStore } from "@/features/auth/auth-store";
+import { registerPushNotifications } from "@/lib/push";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,7 @@ function LoginPage(): JSX.Element {
   // here on launch.
   useEffect(() => {
     if (status === "authenticated" && user) {
+      void registerPushNotifications();
       void navigate({
         to: user.role === "SUPERADMIN" ? "/admin" : "/dashboard",
         replace: true,
@@ -42,6 +44,7 @@ function LoginPage(): JSX.Element {
     onSuccess: (data) => {
       setSession(data.accessToken, data.user);
       toast.success("Bentornato!");
+      void registerPushNotifications();
       void navigate({ to: data.user.role === "SUPERADMIN" ? "/admin" : "/dashboard" });
     },
     onError: (error: AxiosError<{ message?: string }>) => {

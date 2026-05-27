@@ -14,6 +14,7 @@ import { ParticipantsModule } from "./modules/participants/participants.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { PayoutsModule } from "./modules/payouts/payouts.module";
 import { PublicModule } from "./modules/public/public.module";
+import { PushModule } from "./modules/push/push.module";
 import { RemindersModule } from "./modules/reminders/reminders.module";
 import { StorageModule } from "./modules/storage/storage.module";
 import { StripeModule } from "./modules/stripe/stripe.module";
@@ -34,6 +35,7 @@ import { StripeModule } from "./modules/stripe/stripe.module";
     PaymentsModule,
     PayoutsModule,
     PublicModule,
+    PushModule,
     RemindersModule,
     StorageModule,
     StripeModule,

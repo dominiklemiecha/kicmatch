@@ -26,6 +26,11 @@ export const envSchema = z.object({
   MINIO_BUCKET: z.string().default("kicmatch"),
   ADMIN_BOOTSTRAP_TOKEN: z.string().optional(),
   BREVO_API_KEY: z.string().optional(),
+  // Firebase Cloud Messaging (mobile push). Get from Firebase Console →
+  // Project Settings → Service Accounts → Generate new private key.
+  FCM_PROJECT_ID: z.string().optional(),
+  FCM_CLIENT_EMAIL: z.string().optional(),
+  FCM_PRIVATE_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

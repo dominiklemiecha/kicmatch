@@ -40,3 +40,8 @@ apps/crm/ios/App/Pods/
 apps/crm/ios/App/Podfile.lock
 apps/crm/ios/DerivedData/
 apps/crm/ios/.idea/
+
+# Firebase keys — keep local only (CI receives them via secrets)
+apps/crm/android/app/google-services.json
+apps/crm/ios/App/App/GoogleService-Info.plist
+firebase-service-account.json
