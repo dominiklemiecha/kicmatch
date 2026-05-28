@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { createRoute } from "@tanstack/react-router";
-import { Building2, CreditCard, Landmark, Pencil, User } from "lucide-react";
+import { Building2, CreditCard, Fingerprint, Landmark, Pencil, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { MeResponse } from "@kicmatch/shared";
@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { isBiometricAvailable, isBiometricLockEnabled, promptBiometric, setBiometricLockEnabled } from "@/lib/biometric";
 import { Route as RootRoute } from "./__root";
 
 const COUNTRIES = ["Italia", "Svizzera", "Francia", "Germania", "Spagna", "Regno Unito"];
@@ -31,6 +32,35 @@ function SettingsPage(): JSX.Element {
   const [ibanDefault, setIbanDefault] = useState(user?.ibanDefault ?? "");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Biometric app lock (native only)
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioEnabled, setBioEnabled] = useState(false);
+  useEffect(() => {
+    void (async () => {
+      const available = await isBiometricAvailable();
+      setBioAvailable(available);
+      if (available) setBioEnabled(await isBiometricLockEnabled());
+    })();
+  }, []);
+
+  const toggleBiometric = async (): Promise<void> => {
+    if (bioEnabled) {
+      await setBiometricLockEnabled(false);
+      setBioEnabled(false);
+      toast.success("Sblocco biometrico disattivato");
+      return;
+    }
+    // Require a successful biometric prompt before enabling, so we know it works
+    const ok = await promptBiometric("Conferma per attivare lo sblocco biometrico");
+    if (!ok) {
+      toast.error("Verifica biometrica non riuscita");
+      return;
+    }
+    await setBiometricLockEnabled(true);
+    setBioEnabled(true);
+    toast.success("Sblocco biometrico attivato");
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -246,6 +276,31 @@ function SettingsPage(): JSX.Element {
           <div className="text-xs text-muted-foreground mt-1">Fee transazioni 8% (Carta/Apple Pay/Google Pay)</div>
         </div>
       </Card>
+
+      {/* Biometric app lock — native app only */}
+      {bioAvailable && (
+        <Card className="p-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+              <Fingerprint className="h-4 w-4" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold">Sblocco biometrico</div>
+              <div className="text-xs text-muted-foreground">
+                Richiedi impronta o Face ID all'apertura dell'app
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant={bioEnabled ? "default" : "outline"}
+              size="sm"
+              onClick={() => void toggleBiometric()}
+            >
+              {bioEnabled ? "Attivo" : "Attiva"}
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

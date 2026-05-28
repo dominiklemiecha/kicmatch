@@ -174,6 +174,9 @@ importers:
 
   apps/crm:
     dependencies:
+      '@aparajita/capacitor-biometric-auth':
+        specifier: ^8.0.0
+        version: 8.0.2
       '@capacitor-mlkit/barcode-scanning':
         specifier: ^6.2.0
         version: 6.2.0(@capacitor/core@6.2.1)
@@ -189,6 +192,9 @@ importers:
       '@capacitor/ios':
         specifier: ^6.2.0
         version: 6.2.1(@capacitor/core@6.2.1)
+      '@capacitor/preferences':
+        specifier: ^6.0.3
+        version: 6.0.4(@capacitor/core@6.2.1)
       '@capacitor/push-notifications':
         specifier: ^6.0.4
         version: 6.0.5(@capacitor/core@6.2.1)
@@ -362,6 +368,10 @@ packages:
   '@angular-devkit/schematics@17.3.11':
     resolution: {integrity: sha512-I5wviiIqiFwar9Pdk30Lujk8FczEEc18i22A5c6Z9lbmhPQdTroDnEQdsfXjy404wPe8H62s0I15o4pmMGfTYQ==}
     engines: {node: ^18.13.0 || >=20.9.0, npm: ^6.11.0 || ^7.5.6 || >=8.0.0, yarn: '>= 1.13.0'}
+
+  '@aparajita/capacitor-biometric-auth@8.0.2':
+    resolution: {integrity: sha512-f5EHwJYkwQDM/FmoZoyOTmBs/3XEcYURZDUNyps9+Fn7WrgojtJuZP8GhfW7KrQGqCok+ctDd369nEAmNiTxfw==}
+    engines: {node: '>=18'}
 
   '@asamuzakjp/css-color@5.1.11':
     resolution: {integrity: sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg==}
@@ -726,6 +736,11 @@ packages:
     resolution: {integrity: sha512-tbMlQdQjxe1wyaBvYVU1yTojKJjgluZQsJkALuJxv/6F8QTw5b6vd7X785O/O7cMpIAZfUWo/vtAHzFkRV+kXw==}
     peerDependencies:
       '@capacitor/core': ^6.2.0
+
+  '@capacitor/preferences@6.0.4':
+    resolution: {integrity: sha512-ziauSI1pgdyl+gduvvf8lInvzF3Wdyu/ok+u7NlnhKp8XOj9plJgtnXZWFiR8CiCK5wMvo+gFaNh3zhMyEUwpA==}
+    peerDependencies:
+      '@capacitor/core': ^6.0.0
 
   '@capacitor/push-notifications@6.0.5':
     resolution: {integrity: sha512-CsRmb0cnZd9Uwx24ym4My5fNKrQvwI4D51aMEph5pUZy+LAjp6q0y4NJe8DEgwaVdAqVLbb4rqn75AZ4WSiFYg==}
@@ -6791,6 +6806,13 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
+  '@aparajita/capacitor-biometric-auth@8.0.2':
+    dependencies:
+      '@capacitor/android': 6.2.1(@capacitor/core@6.2.1)
+      '@capacitor/app': 6.0.3(@capacitor/core@6.2.1)
+      '@capacitor/core': 6.2.1
+      '@capacitor/ios': 6.2.1(@capacitor/core@6.2.1)
+
   '@asamuzakjp/css-color@5.1.11':
     dependencies:
       '@asamuzakjp/generational-cache': 1.0.1
@@ -7378,6 +7400,10 @@ snapshots:
       tslib: 2.8.1
 
   '@capacitor/ios@6.2.1(@capacitor/core@6.2.1)':
+    dependencies:
+      '@capacitor/core': 6.2.1
+
+  '@capacitor/preferences@6.0.4(@capacitor/core@6.2.1)':
     dependencies:
       '@capacitor/core': 6.2.1
 

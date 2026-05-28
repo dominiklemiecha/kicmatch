@@ -1,6 +1,7 @@
 import { Outlet, createRootRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppShell } from "@/components/layout/app-shell";
+import { BiometricGate } from "@/components/biometric-gate";
 import { useAuthStore } from "@/features/auth/auth-store";
 import { bootstrapSession } from "@/lib/api-client";
 
@@ -62,9 +63,11 @@ function RootLayout(): JSX.Element {
   }
 
   return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
+    <BiometricGate>
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    </BiometricGate>
   );
 }
 

@@ -15,11 +15,13 @@
     "cap:ios": "pnpm cap:sync && cap open ios"
   },
   "dependencies": {
+    "@aparajita/capacitor-biometric-auth": "^8.0.0",
     "@capacitor-mlkit/barcode-scanning": "^6.2.0",
     "@capacitor/android": "^6.2.0",
     "@capacitor/app": "^6.0.2",
     "@capacitor/core": "^6.2.0",
     "@capacitor/ios": "^6.2.0",
+    "@capacitor/preferences": "^6.0.3",
     "@capacitor/push-notifications": "^6.0.4",
     "@hookform/resolvers": "^5.2.2",
     "@kicmatch/shared": "workspace:*",
